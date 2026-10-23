@@ -14,9 +14,9 @@
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 
-  <!-- Firebase Compatibility SDKs (Necessário para funcionar diretamente no HTML sem compilador) -->
+  <!-- Firebase Compatibility SDKs (Realtime Database) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
   <style>
     body {
@@ -130,11 +130,11 @@
     // ==========================================
     // ✏️ ALTERE OS DOIS NÚMEROS AQUI DIRETO NO CÓDIGO
     // ==========================================
-    const CANDIDATE_1_LABEL = "22";
-    const CANDIDATE_2_LABEL = "13";
+    const CANDIDATE_1_LABEL = "00";
+    const CANDIDATE_2_LABEL = "01";
 
     // ==========================================
-    // CONFIGURAÇÃO DO SEU FIREBASE (JÁ ATUALIZADA)
+    // CONFIGURAÇÃO DO SEU FIREBASE (REALTIME DATABASE)
     // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyBbj3q4-ChCNm6908mmaWOiMueQgEc6Eeg",
@@ -142,15 +142,16 @@
       projectId: "pesquisa-rapida-1",
       storageBucket: "pesquisa-rapida-1.firebasestorage.app",
       messagingSenderId: "128001311566",
-      appId: "1:128001311566:web:3554804740b753b396941f"
+      appId: "1:128001311566:web:3554804740b753b396941f",
+      databaseURL: "https://pesquisa-rapida-1-default-rtdb.firebaseio.com/"
     };
 
     // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const db = firebase.database();
 
-    // Referência do documento na nuvem
-    const pollRef = db.collection("polls").doc("live_voting");
+    // Referência do Realtime Database
+    const pollRef = db.ref("polls/live_voting");
 
     // Aplica os textos dos candidatos na interface
     document.getElementById('label-cand1').innerText = CANDIDATE_1_LABEL;
@@ -159,36 +160,39 @@
     // Verificar se o usuário já votou localmente neste navegador
     let hasVotedLocally = localStorage.getItem('has_voted_global_poll') === 'true';
 
-    // Escutar mudanças no Firebase em TEMPO REAL (Ouvinte Global)
-    pollRef.onSnapshot((doc) => {
-      if (doc.exists) {
-        const data = doc.data();
+    // Escutar mudanças em TEMPO REAL
+    pollRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
         updateUI(data.cand1 || 0, data.cand2 || 0);
       } else {
-        // Criar o documento caso ele ainda não exista na nuvem
+        // Inicializa caso o banco esteja vazio
         pollRef.set({ cand1: 0, cand2: 0 });
         updateUI(0, 0);
       }
-    }, (error) => {
-      console.error("Erro na conexão com Firebase: ", error);
     });
 
     // Função para computar voto
-    async function castVote(candidateKey) {
+    function castVote(candidateKey) {
       if (hasVotedLocally) {
         alert("Você já votou nesta enquete!");
         return;
       }
 
-      // Marcar como votado localmente para evitar duplo voto no mesmo dispositivo
+      // Marcar como votado localmente
       localStorage.setItem('has_voted_global_poll', 'true');
       hasVotedLocally = true;
       disableButtons();
 
       try {
-        // Incrementa o contador diretamente no servidor de forma atômica
-        await pollRef.update({
-          [candidateKey]: firebase.firestore.FieldValue.increment(1)
+        // Transação segura para incrementar o voto no Realtime Database
+        pollRef.transaction((currentData) => {
+          if (currentData === null) {
+            return { cand1: candidateKey === 'cand1' ? 1 : 0, cand2: candidateKey === 'cand2' ? 1 : 0 };
+          } else {
+            currentData[candidateKey] = (currentData[candidateKey] || 0) + 1;
+            return currentData;
+          }
         });
       } catch (err) {
         console.error("Erro ao salvar voto:", err);
