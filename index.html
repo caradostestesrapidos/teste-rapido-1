@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votação em Tempo Real</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <!-- Firebase Compatibility SDKs (Necessário para funcionar diretamente no HTML sem compilador) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+    .card-glow-1 {
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);
+    }
+    .card-glow-2 {
+      box-shadow: 0 0 25px rgba(236, 72, 153, 0.2);
+    }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen text-slate-100 flex flex-col items-center justify-center p-4">
+
+  <!-- Main Container -->
+  <main class="w-full max-w-xl mx-auto bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-slate-700/50 shadow-2xl">
+    
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Sincronizado Globalmente
+      </span>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Votação ao Vivo</h1>
+      <p class="text-slate-400 text-sm mt-1">Escolha uma das opções abaixo para registrar seu voto.</p>
+    </header>
+
+    <!-- Total Votes Summary -->
+    <div class="bg-slate-900/60 rounded-xl p-4 mb-6 border border-slate-700/40 text-center">
+      <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total de Votos Registrados</p>
+      <p id="total-votes-count" class="text-3xl font-black text-white mt-1">0</p>
+    </div>
+
+    <!-- Voting Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      
+      <!-- Candidate 1 -->
+      <div id="card-cand1" class="relative bg-slate-900/90 rounded-xl p-5 border-2 border-slate-700 card-glow-1 flex flex-col justify-between transition-all duration-300">
+        <!-- Leading Badge -->
+        <span id="badge-cand1" class="hidden absolute -top-3 right-3 bg-amber-500 text-slate-950 font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
+          <i class="fa-solid fa-crown"></i> Liderando
+        </span>
+
+        <div>
+          <div class="text-center py-2">
+            <span id="label-cand1" class="text-5xl font-black tracking-wider text-blue-400">00</span>
+          </div>
+
+          <!-- Progress Bar & Stats -->
+          <div class="mt-4">
+            <div class="flex justify-between items-center text-sm font-semibold mb-1">
+              <span id="count-cand1" class="text-slate-300">0 votos</span>
+              <span id="percent-cand1" class="text-blue-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-700">
+              <div id="bar-cand1" class="bg-blue-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vote Button -->
+        <button id="btn-vote-1" onclick="castVote('cand1')" class="mt-5 w-full py-3 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold rounded-lg transition-all shadow-lg flex items-center justify-center gap-2">
+          <i class="fa-solid fa-check"></i> Votar
+        </button>
+      </div>
+
+      <!-- Candidate 2 -->
+      <div id="card-cand2" class="relative bg-slate-900/90 rounded-xl p-5 border-2 border-slate-700 card-glow-2 flex flex-col justify-between transition-all duration-300">
+        <!-- Leading Badge -->
+        <span id="badge-cand2" class="hidden absolute -top-3 right-3 bg-amber-500 text-slate-950 font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
+          <i class="fa-solid fa-crown"></i> Liderando
+        </span>
+
+        <div>
+          <div class="text-center py-2">
+            <span id="label-cand2" class="text-5xl font-black tracking-wider text-pink-400">01</span>
+          </div>
+
+          <!-- Progress Bar & Stats -->
+          <div class="mt-4">
+            <div class="flex justify-between items-center text-sm font-semibold mb-1">
+              <span id="count-cand2" class="text-slate-300">0 votos</span>
+              <span id="percent-cand2" class="text-pink-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-700">
+              <div id="bar-cand2" class="bg-pink-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vote Button -->
+        <button id="btn-vote-2" onclick="castVote('cand2')" class="mt-5 w-full py-3 bg-pink-600 hover:bg-pink-500 active:scale-95 text-white font-bold rounded-lg transition-all shadow-lg flex items-center justify-center gap-2">
+          <i class="fa-solid fa-check"></i> Votar
+        </button>
+      </div>
+
+    </div>
+
+    <!-- User Voted Notification -->
+    <div id="voted-alert" class="hidden bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm p-3 rounded-xl text-center font-medium">
+      <i class="fa-solid fa-circle-check mr-1"></i> Você já computou o seu voto neste dispositivo!
+    </div>
+
+  </main>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // ==========================================
+    // ✏️ ALTERE OS DOIS NÚMEROS AQUI DIRETO NO CÓDIGO
+    // ==========================================
+    const CANDIDATE_1_LABEL = "22";
+    const CANDIDATE_2_LABEL = "13";
+
+    // ==========================================
+    // CONFIGURAÇÃO DO SEU FIREBASE (JÁ ATUALIZADA)
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBbj3q4-ChCNm6908mmaWOiMueQgEc6Eeg",
+      authDomain: "pesquisa-rapida-1.firebaseapp.com",
+      projectId: "pesquisa-rapida-1",
+      storageBucket: "pesquisa-rapida-1.firebasestorage.app",
+      messagingSenderId: "128001311566",
+      appId: "1:128001311566:web:3554804740b753b396941f"
+    };
+
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Referência do documento na nuvem
+    const pollRef = db.collection("polls").doc("live_voting");
+
+    // Aplica os textos dos candidatos na interface
+    document.getElementById('label-cand1').innerText = CANDIDATE_1_LABEL;
+    document.getElementById('label-cand2').innerText = CANDIDATE_2_LABEL;
+
+    // Verificar se o usuário já votou localmente neste navegador
+    let hasVotedLocally = localStorage.getItem('has_voted_global_poll') === 'true';
+
+    // Escutar mudanças no Firebase em TEMPO REAL (Ouvinte Global)
+    pollRef.onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        updateUI(data.cand1 || 0, data.cand2 || 0);
+      } else {
+        // Criar o documento caso ele ainda não exista na nuvem
+        pollRef.set({ cand1: 0, cand2: 0 });
+        updateUI(0, 0);
+      }
+    }, (error) => {
+      console.error("Erro na conexão com Firebase: ", error);
+    });
+
+    // Função para computar voto
+    async function castVote(candidateKey) {
+      if (hasVotedLocally) {
+        alert("Você já votou nesta enquete!");
+        return;
+      }
+
+      // Marcar como votado localmente para evitar duplo voto no mesmo dispositivo
+      localStorage.setItem('has_voted_global_poll', 'true');
+      hasVotedLocally = true;
+      disableButtons();
+
+      try {
+        // Incrementa o contador diretamente no servidor de forma atômica
+        await pollRef.update({
+          [candidateKey]: firebase.firestore.FieldValue.increment(1)
+        });
+      } catch (err) {
+        console.error("Erro ao salvar voto:", err);
+      }
+    }
+
+    // Função para atualizar os elementos visuais na tela
+    function updateUI(v1, v2) {
+      const total = v1 + v2;
+      const p1 = total > 0 ? Math.round((v1 / total) * 100) : 0;
+      const p2 = total > 0 ? Math.round((v2 / total) * 100) : 0;
+
+      // Números e Porcentagens
+      document.getElementById('total-votes-count').innerText = total.toLocaleString();
+      
+      document.getElementById('count-cand1').innerText = `${v1.toLocaleString()} ${v1 === 1 ? 'voto' : 'votos'}`;
+      document.getElementById('percent-cand1').innerText = `${p1}%`;
+      document.getElementById('bar-cand1').style.width = `${p1}%`;
+
+      document.getElementById('count-cand2').innerText = `${v2.toLocaleString()} ${v2 === 1 ? 'voto' : 'votos'}`;
+      document.getElementById('percent-cand2').innerText = `${p2}%`;
+      document.getElementById('bar-cand2').style.width = `${p2}%`;
+
+      // Regra de Liderança (Crown Badge)
+      const b1 = document.getElementById('badge-cand1');
+      const b2 = document.getElementById('badge-cand2');
+      const c1 = document.getElementById('card-cand1');
+      const c2 = document.getElementById('card-cand2');
+
+      b1.classList.add('hidden');
+      b2.classList.add('hidden');
+      c1.classList.remove('border-blue-500');
+      c2.classList.remove('border-pink-500');
+
+      if (v1 > v2) {
+        b1.classList.remove('hidden');
+        c1.classList.add('border-blue-500');
+      } else if (v2 > v1) {
+        b2.classList.remove('hidden');
+        c2.classList.add('border-pink-500');
+      }
+
+      if (hasVotedLocally) {
+        disableButtons();
+      }
+    }
+
+    // Desabilitar botões se o usuário já tiver votado
+    function disableButtons() {
+      const btn1 = document.getElementById('btn-vote-1');
+      const btn2 = document.getElementById('btn-vote-2');
+      const alertBox = document.getElementById('voted-alert');
+
+      btn1.disabled = true;
+      btn2.disabled = true;
+      btn1.classList.add('opacity-50', 'cursor-not-allowed', 'hover:bg-blue-600');
+      btn2.classList.add('opacity-50', 'cursor-not-allowed', 'hover:bg-pink-600');
+      btn1.innerHTML = '<i class="fa-solid fa-check-double"></i> Votado';
+      btn2.innerHTML = '<i class="fa-solid fa-check-double"></i> Votado';
+
+      alertBox.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
